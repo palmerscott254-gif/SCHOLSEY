@@ -1,0 +1,415 @@
+// Prisma Schema for Scholsey Device Tracker
+// Database: PostgreSQL 15+
+// Version: 1.0.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER MANAGEMENT
+// ==========================================
+
+model User {
+  id                    String    @id @default(uuid()) @db.Uuid
+  email                 String @unique @db.VarChar(255)
+  passwordHash          String    @map("password_hash") @db.VarChar(255)
+  firstName             String?   @map("first_name") @db.VarChar(100)
+  lastName              String?   @map("last_name") @db.VarChar(100)
+  phoneNumber           String?   @map("phone_number") @db.VarChar(20)
+  
+  // Two-Factor Authentication
+  twoFactorEnabled      Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret       String?   @map("two_factor_secret") @db.VarChar(32)
+  backupCodes           String[]  @map("backup_codes")
+  
+  // Security
+  failedLoginAttempts   Int       @default(0) @map("failed_login_attempts")
+  lockedUntil           DateTime? @map("locked_until") @db.Timestamp()
+  lastLoginAt           DateTime? @map("last_login_at") @db.Timestamp()
+  lastLoginIp           String?   @map("last_login_ip") @db.Inet
+  
+  // Subscription
+  subscriptionTier      String    @default("free") @map("subscription_tier") @db.VarChar(20)
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at") @db.Timestamp()
+  
+  // Metadata
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamp()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamp()
+  
+  // Relations
+  devices               Device[]
+  sessions              UserSession[]
+  alerts                Alert[]
+  aiAnalyses            AIAnalysis[]
+  initiatedActions      RemoteAction[]
+  acknowledgedEvents    SecurityEvent[]  @relation("AcknowledgedEvents")
+  auditLogsUser         AuditLog[]       @relation("UserAuditLogs")
+
+  @@index([email])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+}
+
+model UserSession {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  
+  // Session data
+  refreshTokenHash   String    @unique @map("refresh_token_hash") @db.VarChar(255)
+  deviceFingerprint  String?   @map("device_fingerprint") @db.VarChar(255)
+  userAgent          String?   @map("user_agent")
+  ipAddress          String?   @map("ip_address") @db.Inet
+  
+  // Expiry
+  expiresAt          DateTime  @map("expires_at") @db.Timestamp()
+  revokedAt          DateTime? @map("revoked_at") @db.Timestamp()
+  
+  // Metadata
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  lastActivityAt     DateTime  @default(now()) @map("last_activity_at") @db.Timestamp()
+  
+  // Relations
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+// ==========================================
+// DEVICE MANAGEMENT
+// ==========================================
+
+model Device {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  
+  // Device info
+  deviceName          String    @map("device_name") @db.VarChar(100)
+  deviceType          String    @map("device_type") @db.VarChar(20)
+  osVersion           String?   @map("os_version") @db.VarChar(50)
+  appVersion          String?   @map("app_version") @db.VarChar(20)
+  deviceModel         String?   @map("device_model") @db.VarChar(100)
+  
+  // Identifiers
+  deviceUuid          String    @unique @map("device_uuid") @db.VarChar(255)
+  pushToken           String?   @map("push_token")
+  
+  // Pairing
+  pairingCode         String?   @map("pairing_code") @db.VarChar(6)
+  pairingExpiresAt    DateTime? @map("pairing_expires_at") @db.Timestamp()
+  pairedAt            DateTime? @map("paired_at") @db.Timestamp()
+  publicKey           String?   @map("public_key")
+  
+  // Status
+  isActive            Boolean   @default(true) @map("is_active")
+  isTrackingEnabled   Boolean   @default(true) @map("is_tracking_enabled")
+  stealthMode         Boolean   @default(false) @map("stealth_mode")
+  
+  // Settings
+  settings            Json      @default("{}") @db.JsonB
+  
+  // Metadata
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamp()
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamp()
+  
+  // Relations
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status              DeviceStatus?
+  locationHistory     LocationHistory[]
+  securityEvents      SecurityEvent[]
+  alerts              Alert[]
+  remoteActions       RemoteAction[]
+  auditLogsDevice     AuditLog[]        @relation("DeviceAuditLogs")
+
+  @@index([userId])
+  @@index([deviceUuid])
+  @@index([isActive])
+  @@map("devices")
+}
+
+model DeviceStatus {
+  deviceId                  String    @id @map("device_id") @db.Uuid
+  
+  // Connection status
+  isOnline                  Boolean   @default(false) @map("is_online")
+  lastSeenAt                DateTime? @map("last_seen_at") @db.Timestamp()
+  connectionQuality         String?   @map("connection_quality") @db.VarChar(20)
+  
+  // Battery
+  batteryLevel              Int?      @map("battery_level")
+  isCharging                Boolean?  @map("is_charging")
+  
+  // Network
+  networkType               String?   @map("network_type") @db.VarChar(20)
+  carrierName               String?   @map("carrier_name") @db.VarChar(100)
+  simStatus                 String?   @map("sim_status") @db.VarChar(20)
+  
+  // Location
+  airplaneMode              Boolean   @default(false) @map("airplane_mode")
+  locationServicesEnabled   Boolean   @default(true) @map("location_services_enabled")
+  
+  // Security
+  isRootedJailbroken        Boolean   @default(false) @map("is_rooted_jailbroken")
+  screenLocked              Boolean?  @map("screen_locked")
+  
+  // Current location
+  currentLatitude           Decimal?  @map("current_latitude") @db.Decimal(10, 8)
+  currentLongitude          Decimal?  @map("current_longitude") @db.Decimal(11, 8)
+  currentAccuracy           Decimal?  @map("current_accuracy") @db.Decimal(10, 2)
+  locationUpdatedAt         DateTime? @map("location_updated_at") @db.Timestamp()
+  
+  // Metadata
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamp()
+  
+  // Relations
+  device                    Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([lastSeenAt(sort: Desc)])
+  @@index([isOnline])
+  @@map("device_status")
+}
+
+// ==========================================
+// LOCATION TRACKING
+// ==========================================
+
+model LocationHistory {
+  id          BigInt    @id @default(autoincrement())
+  deviceId    String    @map("device_id") @db.Uuid
+  
+  // Location data
+  latitude    Decimal   @db.Decimal(10, 8)
+  longitude   Decimal   @db.Decimal(11, 8)
+  accuracy    Decimal?  @db.Decimal(10, 2)
+  altitude    Decimal?  @db.Decimal(10, 2)
+  speed       Decimal?  @db.Decimal(10, 2)
+  heading     Decimal?  @db.Decimal(5, 2)
+  
+  // Context
+  activity    String?   @db.VarChar(20)
+  batteryLevel Int?     @map("battery_level")
+  
+  // Timestamp
+  recordedAt  DateTime  @map("recorded_at") @db.Timestamp()
+  syncedAt    DateTime  @default(now()) @map("synced_at") @db.Timestamp()
+  
+  // Relations
+  device      Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, recordedAt(sort: Desc)])
+  @@map("location_history")
+}
+
+// ==========================================
+// SECURITY & EVENTS
+// ==========================================
+
+model SecurityEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  deviceId        String    @map("device_id") @db.Uuid
+  
+  // Event type
+  eventType       String    @map("event_type") @db.VarChar(50)
+  
+  // Event data
+  severity        String    @db.VarChar(20)
+  description     String?
+  metadata        Json?     @db.JsonB
+  
+  // Location at time of event
+  latitude        Decimal?  @db.Decimal(10, 8)
+  longitude       Decimal?  @db.Decimal(11, 8)
+  accuracy        Decimal?  @db.Decimal(10, 2)
+  
+  // Media
+  photoUrl        String?   @map("photo_url")
+  audioUrl        String?   @map("audio_url")
+  
+  // Status
+  acknowledged    Boolean   @default(false)
+  acknowledgedAt  DateTime? @map("acknowledged_at") @db.Timestamp()
+  acknowledgedBy  String?   @map("acknowledged_by") @db.Uuid
+  
+  // Timestamp
+  occurredAt      DateTime  @default(now()) @map("occurred_at") @db.Timestamp()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  
+  // Relations
+  device          Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  acknowledger    User?     @relation("AcknowledgedEvents", fields: [acknowledgedBy], references: [id])
+  alerts          Alert[]
+
+  @@index([deviceId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([occurredAt(sort: Desc)])
+  @@index([acknowledged])
+  @@map("security_events")
+}
+
+model Alert {
+  id                String         @id @default(uuid()) @db.Uuid
+  userId            String         @map("user_id") @db.Uuid
+  deviceId          String?        @map("device_id") @db.Uuid
+  securityEventId   String?        @map("security_event_id") @db.Uuid
+  
+  // Alert details
+  title             String         @db.VarChar(255)
+  message           String
+  alertType         String         @map("alert_type") @db.VarChar(50)
+  priority          String         @db.VarChar(20)
+  
+  // Notification channels
+  sentPush          Boolean        @default(false) @map("sent_push")
+  sentEmail         Boolean        @default(false) @map("sent_email")
+  sentSms           Boolean        @default(false) @map("sent_sms")
+  
+  // Status
+  isRead            Boolean        @default(false) @map("is_read")
+  readAt            DateTime?      @map("read_at") @db.Timestamp()
+  dismissed         Boolean        @default(false)
+  dismissedAt       DateTime?      @map("dismissed_at") @db.Timestamp()
+  
+  // Metadata
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamp()
+  
+  // Relations
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device            Device?        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  securityEvent     SecurityEvent? @relation(fields: [securityEventId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, isRead])
+  @@map("alerts")
+}
+
+// ==========================================
+// REMOTE ACTIONS
+// ==========================================
+
+model RemoteAction {
+  id           String    @id @default(uuid()) @db.Uuid
+  deviceId     String    @map("device_id") @db.Uuid
+  initiatedBy  String    @map("initiated_by") @db.Uuid
+  
+  // Action details
+  actionType   String    @map("action_type") @db.VarChar(50)
+  parameters   Json?     @db.JsonB
+  
+  // Status
+  status       String    @default("pending") @db.VarChar(20)
+  result       Json?     @db.JsonB
+  errorMessage String?   @map("error_message")
+  
+  // Timestamps
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  sentAt       DateTime? @map("sent_at") @db.Timestamp()
+  executedAt   DateTime? @map("executed_at") @db.Timestamp()
+  expiresAt    DateTime  @default(dbgenerated("(NOW() + INTERVAL '5 minutes')")) @map("expires_at") @db.Timestamp()
+  
+  // Relations
+  device       Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  initiator    User      @relation(fields: [initiatedBy], references: [id])
+
+  @@index([deviceId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("remote_actions")
+}
+
+// ==========================================
+// AI ANALYSIS
+// ==========================================
+
+model AIAnalysis {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId                  String    @map("user_id") @db.Uuid
+  
+  // Image info
+  imageUrl                String    @map("image_url")
+  imageHash               String?   @unique @map("image_hash") @db.VarChar(64)
+  fileSizeBytes           BigInt?   @map("file_size_bytes")
+  
+  // Analysis results
+  isAiGenerated           Boolean?  @map("is_ai_generated")
+  aiProbability           Decimal?  @map("ai_probability") @db.Decimal(5, 4)
+  isEdited                Boolean?  @map("is_edited")
+  editProbability         Decimal?  @map("edit_probability") @db.Decimal(5, 4)
+  
+  // Detailed findings
+  metadataAnomalies       Json?     @map("metadata_anomalies") @db.JsonB
+  lightingInconsistencies Json?     @map("lighting_inconsistencies") @db.JsonB
+  compressionArtifacts    Json?     @map("compression_artifacts") @db.JsonB
+  
+  // Overall
+  authenticityScore       Decimal?  @map("authenticity_score") @db.Decimal(5, 4)
+  confidenceLevel         String?   @map("confidence_level") @db.VarChar(20)
+  explanation             String?
+  detailedReport          Json?     @map("detailed_report") @db.JsonB
+  
+  // Processing
+  processingTimeMs        Int?      @map("processing_time_ms")
+  modelVersion            String?   @map("model_version") @db.VarChar(20)
+  
+  // Metadata
+  analyzedAt              DateTime  @default(now()) @map("analyzed_at") @db.Timestamp()
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  
+  // Relations
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([imageHash])
+  @@index([createdAt(sort: Desc)])
+  @@map("ai_analysis")
+}
+
+// ==========================================
+// AUDIT LOG
+// ==========================================
+
+model AuditLog {
+  id         BigInt    @id @default(autoincrement())
+  
+  // Who
+  userId     String?   @map("user_id") @db.Uuid
+  deviceId   String?   @map("device_id") @db.Uuid
+  
+  // What
+  action     String    @db.VarChar(100)
+  entityType String?   @map("entity_type") @db.VarChar(50)
+  entityId   String?   @map("entity_id") @db.Uuid
+  
+  // Details
+  changes    Json?     @db.JsonB
+  metadata   Json?     @db.JsonB
+  
+  // Context
+  ipAddress  String?   @map("ip_address") @db.Inet
+  userAgent  String?   @map("user_agent")
+  
+  // When
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  
+  // Relations
+  user       User?     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  device     Device?   @relation("DeviceAuditLogs", fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_log")
+}
