@@ -66,6 +66,26 @@ npm run start:dev
 
 The desktop app expects the API at `http://localhost:3000`
 
+## Authentication
+
+The login page supports:
+
+### Email/Password Authentication
+- Create a new account with email and password
+- Password must be at least 8 characters
+- Password visibility toggle for convenience
+- Secure password confirmation on registration
+
+### Google OAuth (Coming Soon)
+- Quick sign-in with Google account
+- No password needed
+- Automatic account creation on first login
+
+The app connects to the backend API at:
+- **Login**: `POST http://localhost:3000/v1/auth/login`
+- **Register**: `POST http://localhost:3000/v1/auth/register`
+- **Google OAuth**: Integration in progress
+
 ### Redis Not Running
 
 If you see Redis connection errors, start Redis:
@@ -93,6 +113,12 @@ The desktop app provides:
 - AI image analysis interface
 - Charts and analytics
 - 2FA setup and management
+- **User registration and login**
+- **Google OAuth authentication** (integration in progress)
+- Password visibility toggle
+- Form validation
+- **Guest mode** - Access dashboard without authentication
+- **Quick login from dashboard** - Login menu in top navigation bar
 
 ## Tech Stack
 
@@ -106,12 +132,24 @@ The desktop app provides:
 
 ## First Time Setup
 
-After starting the app for the first time:
+The app can be used in two modes:
 
-1. **Register an account** using the registration form
-2. **Enable 2FA** (optional but recommended)
-3. **Pair a device** using QR code or pairing code
-4. Start monitoring your devices!
+### Guest Mode (No Login Required)
+- Access all dashboard features without authentication
+- Click "Continue as Guest" on the login page
+- Or click the account icon in the top-right corner to access login anytime
+
+### Authenticated User
+1. **Create an account** 
+   - Click "Create one" on the login page
+   - Fill in your first name, last name, email, and password
+   - Or use "Continue with Google" for OAuth login
+2. **Sign in** with your credentials
+3. **Enable 2FA** (optional but recommended)
+4. **Pair a device** using QR code or pairing code
+5. Start monitoring your devices!
+
+**Note:** Guest mode allows you to explore the app, but authentication is required for full device management and security features.
 
 ## Development Mode
 

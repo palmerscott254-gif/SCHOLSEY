@@ -24,18 +24,15 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         
-        {isAuthenticated ? (
-          <Route path="/" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="map" element={<DeviceMap />} />
-            <Route path="alerts" element={<Alerts />} />
-            <Route path="timeline" element={<Timeline />} />
-            <Route path="ai-analysis" element={<AIAnalysis />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        ) : (
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        )}
+        {/* Allow access to dashboard regardless of authentication status */}
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="map" element={<DeviceMap />} />
+          <Route path="alerts" element={<Alerts />} />
+          <Route path="timeline" element={<Timeline />} />
+          <Route path="ai-analysis" element={<AIAnalysis />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
       </Routes>
     </Box>
   );
