@@ -1,236 +1,128 @@
-# Smart Device Security & Tracking Platform
+# How to Run the Frontend (Desktop App)
 
-## 🚀 Enterprise-Grade Cross-Platform Security System
+## Prerequisites
 
-A production-ready system for secure device tracking, theft protection, and forensic analysis across mobile and desktop platforms.
+- Node.js 18+ installed
+- Backend API running on `http://localhost:3000`
+- Redis running on port 6379
 
-## 📋 Features
+## Quick Start
 
-### Mobile App (Android & iOS)
-- 📍 Real-time GPS tracking with offline caching
-- 🔒 Failed login attempt detection with silent photo capture
-- 🚨 SIM removal & airplane mode detection
-- 👻 Stealth mode operation
-- 🎭 Decoy mode to mislead thieves
-- 🎤 Voice phrase emergency trigger
-- 🔐 Biometric authentication
-
-### Desktop Dashboard
-- 🗺️ Real-time device location mapping
-- 📊 Comprehensive device status monitoring
-- ⚠️ Intelligent alert system
-- 📈 Timeline & forensic analysis
-- 🎮 Remote device control (lock, alarm, wipe)
-- 🖼️ AI-powered image authenticity analysis
-
-### Backend Infrastructure
-- ⚡ Real-time WebSocket communication (<1s latency)
-- 🔐 End-to-end encryption
-- 📡 Event-driven architecture
-- 🌐 Horizontally scalable microservices
-- 🔄 Auto-sync with offline capability
-- 🛡️ Role-based access control (RBAC)
-
-## 🏗️ Tech Stack
-
-### Backend
-- **Runtime**: Node.js 20+ with TypeScript
-- **Framework**: NestJS (enterprise architecture)
-- **Database**: PostgreSQL 15+ (primary), Redis (cache/sessions)
-- **Real-time**: Socket.IO with Redis adapter
-- **Message Queue**: Bull (Redis-based)
-- **Authentication**: JWT + Passport.js
-- **Encryption**: AES-256-GCM
-
-### Mobile
-- **Framework**: React Native 0.73+
-- **State**: Redux Toolkit with RTK Query
-- **Maps**: react-native-maps
-- **Biometrics**: react-native-biometrics
-- **Camera**: react-native-vision-camera
-- **Location**: @react-native-community/geolocation
-- **Storage**: realm-js (encrypted offline storage)
-
-### Desktop
-- **Framework**: Electron + React
-- **UI**: Material-UI v5
-- **Maps**: Mapbox GL JS
-- **Charts**: Recharts
-- **State**: Redux Toolkit
-
-### AI Service
-- **Runtime**: Python 3.11+
-- **Framework**: FastAPI
-- **ML Libraries**: TensorFlow, PyTorch
-- **Image Analysis**: OpenCV, Pillow
-- **Metadata**: exiftool, PIL
-
-### Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **Orchestration**: Kubernetes
-- **CI/CD**: GitHub Actions
-- **Cloud**: AWS/GCP/Azure compatible
-- **Monitoring**: Prometheus + Grafana
-- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-
-## 📁 Project Structure
-
-```
-├── backend/                 # NestJS API server
-│   ├── src/
-│   │   ├── auth/           # Authentication & 2FA
-│   │   ├── devices/        # Device management
-│   │   ├── tracking/       # GPS & location services
-│   │   ├── alerts/         # Alert system
-│   │   ├── security/       # Security events
-│   │   ├── gateway/        # WebSocket gateway
-│   │   └── ai-proxy/       # AI service proxy
-│   ├── prisma/             # Database schema & migrations
-│   └── docker/
-│
-├── mobile/                  # React Native app
-│   ├── src/
-│   │   ├── screens/        # App screens
-│   │   ├── services/       # Background services
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── store/          # Redux store
-│   │   └── utils/          # Utilities & encryption
-│   ├── android/
-│   └── ios/
-│
-├── desktop/                 # Electron dashboard
-│   ├── src/
-│   │   ├── main/           # Electron main process
-│   │   ├── renderer/       # React UI
-│   │   └── components/     # UI components
-│   └── build/
-│
-├── ai-service/              # Python ML service
-│   ├── app/
-│   │   ├── models/         # ML models
-│   │   ├── analyzers/      # Image analysis modules
-│   │   └── api/            # FastAPI endpoints
-│   └── requirements.txt
-│
-├── infrastructure/          # DevOps & deployment
-│   ├── kubernetes/         # K8s manifests
-│   ├── docker-compose/     # Local development
-│   └── terraform/          # Infrastructure as Code
-│
-└── docs/                    # Documentation
-    ├── architecture/       # System design
-    ├── api/                # API specifications
-    └── deployment/         # Deployment guides
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 20+
-- Python 3.11+
-- Docker & Docker Compose
-- PostgreSQL 15+
-- Redis 7+
-
-### Local Development
-
-1. **Clone and Install**
+### 1. Navigate to Desktop Directory
 ```bash
-# Install backend dependencies
-cd backend && npm install
-
-# Install mobile dependencies
-cd ../mobile && npm install
-
-# Install desktop dependencies
-cd ../desktop && npm install
-
-# Install AI service dependencies
-cd ../ai-service && pip install -r requirements.txt
+cd desktop
 ```
 
-2. **Setup Database**
+### 2. Install Dependencies
 ```bash
-cd backend
-cp .env.example .env
-# Edit .env with your database credentials
-npx prisma migrate dev
-npx prisma generate
+npm install
 ```
 
-3. **Start Services (Development)**
+**Note:** If you encounter an npm installation error with `ENOTEMPTY`, clean and reinstall:
 ```bash
-# Start all services with Docker Compose
-docker-compose -f infrastructure/docker-compose/dev.yml up
-
-# Or start individually:
-# Backend API
-cd backend && npm run start:dev
-
-# AI Service
-cd ai-service && uvicorn app.main:app --reload
-
-# Desktop Dashboard
-cd desktop && npm run dev
-
-# Mobile App
-cd mobile && npx react-native start
+rm -rf node_modules package-lock.json
+npm install
 ```
 
-## 📚 Documentation
-
-- [System Architecture](docs/architecture/SYSTEM_ARCHITECTURE.md)
-- [Database Schema](docs/architecture/DATABASE_SCHEMA.md)
-- [API Documentation](docs/api/API_REFERENCE.md)
-- [Security Protocols](docs/architecture/SECURITY.md)
-- [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
-- [UI Wireframes](docs/design/WIREFRAMES.md)
-
-## 🔒 Security Features
-
-- End-to-end encryption (AES-256-GCM)
-- Secure device pairing (QR code + secret key exchange)
-- Root/jailbreak detection
-- Certificate pinning
-- Anti-tampering protection
-- Secure key storage (Keychain/Keystore)
-- Rate limiting & DDoS protection
-
-## 📊 Performance Targets
-
-- Real-time updates: <1 second latency
-- Support: Millions of concurrent devices
-- Uptime: 99.9% SLA
-- Bandwidth: Optimized for 2G networks
-- Battery: Minimal impact (<5% per day)
-
-## 🧪 Testing
-
+### 3. Start the Desktop App
 ```bash
-# Backend tests
-cd backend && npm test
-
-# Mobile tests
-cd mobile && npm test
-
-# E2E tests
-cd mobile && npm run e2e:ios
-cd mobile && npm run e2e:android
+npm run dev
 ```
 
-## 📦 Deployment
+This will:
+- Start Vite development server on `http://localhost:5173`
+- Launch the Electron desktop application window
 
-See [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md) for production deployment instructions.
+## Troubleshooting
 
-## 📄 License
+### Electron Installation Error
 
-Proprietary - All Rights Reserved
+If you see: `Error: Electron failed to install correctly`
 
-## 👥 Team
+**Solution:**
+```bash
+rm -rf node_modules/electron
+npm install electron
+npm run dev
+```
 
-Built for enterprise-grade security and tracking solutions.
+### Port Already in Use
 
----
+If port 5173 is already in use:
+```bash
+# Kill the process using port 5173
+lsof -ti :5173 | xargs kill -9
+npm run dev
+```
 
-**Version**: 1.0.0  
-**Last Updated**: February 2026
+### Backend Connection Issues
+
+Make sure the backend is running:
+```bash
+# In the backend directory
+cd ../backend
+npm run start:dev
+```
+
+The desktop app expects the API at `http://localhost:3000`
+
+### Redis Not Running
+
+If you see Redis connection errors, start Redis:
+```bash
+# Using Podman (if Docker is not available)
+podman run -d -p 6379:6379 docker.io/library/redis:latest
+
+# Or using Docker
+docker run -d -p 6379:6379 redis
+```
+
+## Available Scripts
+
+- `npm run dev` - Start development mode (Electron + Vite)
+- `npm run build` - Build the application for production
+- `npm run start` - Start the built application
+
+## Features
+
+The desktop app provides:
+- Real-time device monitoring
+- Interactive map with device locations
+- Security alerts timeline
+- Remote device actions (lock, alarm, locate)
+- AI image analysis interface
+- Charts and analytics
+- 2FA setup and management
+
+## Tech Stack
+
+- **Framework:** Electron 28+
+- **UI Library:** React 18+
+- **UI Components:** Material-UI v5
+- **Maps:** Mapbox GL
+- **Charts:** Recharts
+- **State Management:** Redux Toolkit
+- **Build Tool:** Vite
+
+## First Time Setup
+
+After starting the app for the first time:
+
+1. **Register an account** using the registration form
+2. **Enable 2FA** (optional but recommended)
+3. **Pair a device** using QR code or pairing code
+4. Start monitoring your devices!
+
+## Development Mode
+
+The app runs in two processes:
+- **Main Process** - Electron backend (Node.js)
+- **Renderer Process** - React frontend (Vite dev server)
+
+Hot reload is enabled for both processes during development.
+
+## Need Help?
+
+- Check backend logs in `backend/` terminal
+- Check frontend logs in Electron DevTools (View → Toggle Developer Tools)
+- Verify all services are running with `podman ps` or `docker ps`
