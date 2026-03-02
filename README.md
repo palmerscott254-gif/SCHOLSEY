@@ -1,3 +1,7 @@
+# SCHOLSEY - Smart Device Security & Tracking System
+
+> 📐 **[View Complete Architecture Diagram](./ARCHITECTURE.md)** - System overview, data flows, and technical stack
+
 # How to Run the Frontend (Desktop App)
 
 ## Prerequisites
@@ -158,6 +162,14 @@ The app runs in two processes:
 - **Renderer Process** - React frontend (Vite dev server)
 
 Hot reload is enabled for both processes during development.
+
+## 📚 Documentation
+
+- **[Architecture Diagram](./ARCHITECTURE.md)** - Complete system architecture, data flows, API endpoints
+- **[Device Linking Guide](./docs/DEVICE_LINKING.md)** - 2-step pairing implementation details
+- **[Implementation Summary](./docs/DEVICE_LINKING_IMPLEMENTATION.md)** - Device pairing technical overview
+- **[Audit Report](./AUDIT_REPORT.md)** - Security audit findings
+- **[Executive Summary](./EXECUTIVE_SUMMARY.md)** - Project overview
 
 ## Need Help?
 
