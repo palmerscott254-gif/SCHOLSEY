@@ -11,9 +11,8 @@ function createWindow() {
     minHeight: 700,
     title: 'Device Tracker Dashboard',
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
     },
     backgroundColor: '#1a1a1a',
     show: false,

@@ -17,6 +17,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { setAuth } from '../store/slices/authSlice';
+import { api } from '../services/api';
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,6 +29,7 @@ const Login: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -34,6 +37,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     // Validation
@@ -51,43 +55,25 @@ const Login: React.FC = () => {
 
     try {
       if (isLogin) {
-        // TODO: Implement actual login API call to http://localhost:3000/v1/auth/login
-        const response = await fetch('http://localhost:3000/v1/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Login failed');
-        }
-
-        const data = await response.json();
-        // dispatch(loginSuccess({ token: data.token, user: data.user }));
+        const data = await api.auth.login({ email, password });
+        dispatch(setAuth({ user: data.user, token: data.accessToken }));
         navigate('/');
       } else {
-        // TODO: Implement actual registration API call to http://localhost:3000/v1/auth/register
-        const response = await fetch('http://localhost:3000/v1/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            password,
-            firstName,
-            lastName,
-          }),
+        await api.auth.register({
+          email,
+          password,
+          firstName,
+          lastName,
         });
-
-        if (!response.ok) {
-          throw new Error('Registration failed');
-        }
 
         // After successful registration, switch to login
         setIsLogin(true);
         setError('');
+        setSuccess('Account created successfully! Please sign in.');
         setPassword('');
         setConfirmPassword('');
-        alert('Account created successfully! Please sign in.');
+        setFirstName('');
+        setLastName('');
       }
       setLoading(false);
     } catch (err: any) {
@@ -122,6 +108,7 @@ const Login: React.FC = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError('');
+    setSuccess('');
     setPassword('');
     setConfirmPassword('');
   };
@@ -151,6 +138,12 @@ const Login: React.FC = () => {
             </Alert>
           )}
 
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit}>
             {!isLogin && (
               <>
@@ -158,7 +151,7 @@ const Login: React.FC = () => {
                   fullWidth
                   label="First Name"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}
                   margin="normal"
                   required
                   autoFocus
@@ -167,7 +160,7 @@ const Login: React.FC = () => {
                   fullWidth
                   label="Last Name"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}
                   margin="normal"
                   required
                 />
@@ -179,7 +172,7 @@ const Login: React.FC = () => {
               label="Email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               margin="normal"
               required
               autoFocus={isLogin}
@@ -190,7 +183,7 @@ const Login: React.FC = () => {
               label="Password"
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               margin="normal"
               required
               InputProps={{
@@ -213,7 +206,7 @@ const Login: React.FC = () => {
                 label="Confirm Password"
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 margin="normal"
                 required
               />

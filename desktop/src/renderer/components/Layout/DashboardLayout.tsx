@@ -22,18 +22,20 @@ import {
   Logout as LogoutIcon,
   PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
+import { logout } from '../../store/slices/authSlice';
 import Sidebar from './Sidebar';
 
 const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const [notificationCount, setNotificationCount] = React.useState(3);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const user = useSelector((state: RootState) => state.auth.user);
+  const unreadCount = useSelector((state: RootState) => state.alerts.unreadCount);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -50,8 +52,7 @@ const DashboardLayout: React.FC = () => {
 
   const handleLogout = () => {
     handleMenuClose();
-    // TODO: Dispatch logout action
-    // dispatch(logout());
+    dispatch(logout());
   };
 
   return (
@@ -86,7 +87,7 @@ const DashboardLayout: React.FC = () => {
             )}
 
             <IconButton color="inherit">
-              <Badge badgeContent={notificationCount} color="error">
+              <Badge badgeContent={unreadCount} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>

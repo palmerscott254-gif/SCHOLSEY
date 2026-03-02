@@ -19,6 +19,9 @@ import { ActionsModule } from './actions/actions.module';
 import { AiModule } from './ai/ai.module';
 import { GatewayModule } from './gateway/gateway.module';
 
+// Controllers
+import { AppController } from './app.controller';
+
 @Module({
   imports: [
     // Configuration
@@ -64,5 +67,6 @@ import { GatewayModule } from './gateway/gateway.module';
     AiModule,
     GatewayModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

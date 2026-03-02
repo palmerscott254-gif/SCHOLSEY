@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,7 +15,7 @@ export class AiController {
   @ApiOperation({ summary: 'Analyze image for authenticity' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('image'))
-  async analyzeImage(@UploadedFile() file: Express.Multer.File) {
+  async analyzeImage(@UploadedFile() file: Express.Multer.File, @Request() req) {
     return this.aiService.analyzeImage(file);
   }
 }
