@@ -31,7 +31,7 @@ import {
   Security,
   Notifications,
   CreditCard,
-  Privacy,
+  PrivacyTip,
   Palette,
   Delete,
   Save,
@@ -243,7 +243,7 @@ const Settings: React.FC = () => {
           <Tab icon={<Security />} label="Security" />
           <Tab icon={<Notifications />} label="Notifications" />
           <Tab icon={<CreditCard />} label="Subscription" />
-          <Tab icon={<Privacy />} label="Privacy" />
+          <Tab icon={<PrivacyTip />} label="Privacy" />
           <Tab icon={<Palette />} label="Appearance" />
         </Tabs>
 
