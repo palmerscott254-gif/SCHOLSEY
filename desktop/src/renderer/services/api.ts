@@ -300,5 +300,41 @@ export const api = {
 
       return response.status === 204 || response.json();
     },
+
+    uploadProfilePicture: async (file: File, token: string) => {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
+      const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error: any = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to upload profile picture');
+      }
+
+      return response.json();
+    },
+
+    removeProfilePicture: async (token: string) => {
+      const response = await fetch(`${API_BASE_URL}/users/profile-picture`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error: any = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to remove profile picture');
+      }
+
+      return response.json();
+    },
   },
 };

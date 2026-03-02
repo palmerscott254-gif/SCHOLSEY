@@ -15,6 +15,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        profilePicture: true,
         twoFactorEnabled: true,
         subscriptionTier: true,
         subscriptionExpiresAt: true,
@@ -50,6 +51,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        profilePicture: true,
         updatedAt: true,
       },
     });
@@ -85,5 +87,37 @@ export class UsersService {
     return {
       message: 'Account deletion scheduled. Your data will be permanently removed within 30 days.',
     };
+  }
+
+  async updateProfilePicture(id: string, profilePictureUrl: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { profilePicture: profilePictureUrl },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        profilePicture: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async removeProfilePicture(id: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { profilePicture: null },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        profilePicture: true,
+        updatedAt: true,
+      },
+    });
   }
 }

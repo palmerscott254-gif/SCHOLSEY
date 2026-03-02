@@ -42,6 +42,8 @@ import {
   Warning,
   Laptop,
   CheckCircle,
+  PhotoCamera,
+  AccountCircle,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -82,6 +84,9 @@ const Settings: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
 
   // Security state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -126,8 +131,72 @@ const Settings: React.FC = () => {
       setEmail(profile.email || '');
       setPhoneNumber(profile.phoneNumber || '');
       setTwoFactorEnabled(profile.twoFactorEnabled || false);
+      setProfilePicture(profile.profilePicture || null);
     } catch (err: any) {
       console.error('Error fetching profile:', err);
+    }
+  };
+
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadProfilePicture = async () => {
+    if (!token || !profilePictureFile) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await api.users.uploadProfilePicture(profilePictureFile, token);
+      setProfilePicture(response.profilePicture);
+      setProfilePictureFile(null);
+      setProfilePicturePreview(null);
+      
+      setSuccess('Profile picture updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload profile picture');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      await api.users.removeProfilePicture(token);
+      setProfilePicture(null);
+      setProfilePicturePreview(null);
+      
+      setSuccess('Profile picture removed successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to remove profile picture');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -251,6 +320,88 @@ const Settings: React.FC = () => {
         <TabPanel value={tabValue} index={0}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
+              {/* Profile Picture Section */}
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Profile Picture
+                  </Typography>
+                  
+                  <Box display="flex" alignItems="center" gap={3}>
+                    <Box
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        border: '3px solid',
+                        borderColor: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'background.default',
+                      }}
+                    >
+                      {profilePicturePreview || profilePicture ? (
+                        <img
+                          src={profilePicturePreview || (profilePicture ? `http://localhost:3000${profilePicture}` : '')}
+                          alt="Profile"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <AccountCircle sx={{ fontSize: 100, color: 'text.secondary' }} />
+                      )}
+                    </Box>
+                    
+                    <Box>
+                      <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="profile-picture-upload"
+                        type="file"
+                        onChange={handleProfilePictureChange}
+                      />
+                      <label htmlFor="profile-picture-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          startIcon={<PhotoCamera />}
+                        >
+                          Choose Photo
+                        </Button>
+                      </label>
+                      
+                      {profilePicturePreview && (
+                        <Button
+                          variant="contained"
+                          onClick={handleUploadProfilePicture}
+                          disabled={loading}
+                          sx={{ ml: 2 }}
+                        >
+                          Upload
+                        </Button>
+                      )}
+                      
+                      {(profilePicture || profilePicturePreview) && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={handleRemoveProfilePicture}
+                          disabled={loading}
+                          sx={{ ml: 2 }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                      
+                      <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 1 }}>
+                        Recommended: Square image, max 5MB (JPG, PNG)
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+
               <Typography variant="h6" gutterBottom>
                 Personal Information
               </Typography>
@@ -673,7 +824,7 @@ const Settings: React.FC = () => {
                     sx={{ mb: 2 }}
                     disabled={user?.subscriptionTier === 'basic'}
                   >
-                    Basic - $9.99/mo
+                    Basic - KSh 1,299/mo
                   </Button>
                   
                   <Button
@@ -683,7 +834,7 @@ const Settings: React.FC = () => {
                     sx={{ mb: 2 }}
                     disabled={user?.subscriptionTier === 'premium'}
                   >
-                    Premium - $19.99/mo
+                    Premium - KSh 2,599/mo
                   </Button>
                   
                   <Button
