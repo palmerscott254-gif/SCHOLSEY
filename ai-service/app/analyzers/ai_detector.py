@@ -1,10 +1,11 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 import io
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from typing import Dict
+from typing import Dict, Optional
+import os
 
 class AIDetector:
     """
@@ -15,6 +16,10 @@ class AIDetector:
     def __init__(self):
         self.model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model_path = os.getenv("AI_DETECTOR_MODEL_PATH")
+        self.model_weight = float(os.getenv("AI_MODEL_WEIGHT", "0.0"))
+        self.model_available = False
+        self.analysis_size = int(os.getenv("AI_ANALYSIS_SIZE", "512"))
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -23,12 +28,22 @@ class AIDetector:
     
     async def load_model(self):
         """Load pre-trained AI detection model"""
-        # In production, load actual trained model weights
-        # For demo, create simple model architecture
-        self.model = self._build_model()
-        self.model.to(self.device)
-        self.model.eval()
-        print("✅ AI Detector model loaded")
+        if self.model_path and os.path.exists(self.model_path):
+            try:
+                self.model = self._build_model()
+                state_dict = torch.load(self.model_path, map_location=self.device)
+                self.model.load_state_dict(state_dict)
+                self.model.to(self.device)
+                self.model.eval()
+                self.model_available = True
+                print("✅ AI Detector model loaded")
+                return
+            except Exception as e:
+                print(f"⚠️ Failed to load AI detector model weights: {e}")
+
+        self.model = None
+        self.model_available = False
+        print("✅ AI Detector running in heuristic mode")
     
     def _build_model(self):
         """Build simple CNN for AI detection"""
@@ -62,31 +77,46 @@ class AIDetector:
         try:
             # Load image
             image = Image.open(io.BytesIO(image_data)).convert('RGB')
-            
-            # Preprocess
-            input_tensor = self.transform(image).unsqueeze(0).to(self.device)
-            
-            # Inference
-            with torch.no_grad():
-                output = self.model(input_tensor)
-                probability = output.item()
+            if max(image.size) > self.analysis_size:
+                image.thumbnail((self.analysis_size, self.analysis_size), Image.Resampling.LANCZOS)
+
+            model_probability: Optional[float] = None
+            if self.model_available and self.model is not None:
+                input_tensor = self.transform(image).unsqueeze(0).to(self.device)
+                with torch.no_grad():
+                    output = self.model(input_tensor)
+                    model_probability = float(output.item())
             
             # Additional heuristics
             noise_score = self._analyze_noise_patterns(image)
             frequency_score = self._analyze_frequency_domain(image)
+            texture_score = self._analyze_texture_consistency(image)
             
             # Combine scores
-            combined_probability = (probability * 0.6 + noise_score * 0.2 + frequency_score * 0.2)
+            heuristic_probability = (
+                noise_score * 0.35 +
+                frequency_score * 0.35 +
+                texture_score * 0.30
+            )
+
+            if model_probability is None or self.model_weight <= 0:
+                combined_probability = heuristic_probability
+            else:
+                model_weight = min(max(self.model_weight, 0.0), 1.0)
+                combined_probability = (
+                    model_probability * model_weight + heuristic_probability * (1.0 - model_weight)
+                )
             
             return {
-                "is_ai_generated": combined_probability > 0.5,
+                "is_ai_generated": combined_probability > 0.6,
                 "probability": round(combined_probability, 4),
-                "model_confidence": round(probability, 4),
+                "model_confidence": round(model_probability, 4) if model_probability is not None else None,
                 "noise_score": round(noise_score, 4),
                 "frequency_score": round(frequency_score, 4),
+                "texture_score": round(texture_score, 4),
                 "details": {
-                    "method": "cnn_classifier_plus_heuristics",
-                    "model": "custom_ai_detector_v1",
+                    "method": "heuristics_with_optional_model_fusion",
+                    "model": "custom_ai_detector_v1" if self.model_available else "heuristic_only",
                 }
             }
             
@@ -102,53 +132,81 @@ class AIDetector:
         """
         Analyze noise patterns - AI images often have characteristic noise
         """
-        img_array = np.array(image)
-        
-        # Calculate local variance in small patches
-        patch_size = 8
-        variances = []
-        
-        for i in range(0, img_array.shape[0] - patch_size, patch_size):
-            for j in range(0, img_array.shape[1] - patch_size, patch_size):
-                patch = img_array[i:i+patch_size, j:j+patch_size]
-                variances.append(np.var(patch))
-        
-        # AI images tend to have more uniform noise
-        variance_std = np.std(variances)
-        
-        # Normalize to 0-1 score
-        noise_score = 1.0 - min(variance_std / 1000.0, 1.0)
-        
-        return noise_score
+        img_array = np.array(image.convert('L'), dtype=np.float32)
+
+        # Residual noise approximation: high-pass filtered detail
+        blur = np.array(image.convert('L').filter(ImageFilter.GaussianBlur(radius=1.2)), dtype=np.float32)
+        residual = np.abs(img_array - blur)
+
+        # Compare local variability (too-uniform residuals may indicate synthetic generation)
+        block = 16
+        h, w = residual.shape
+        h_trim = (h // block) * block
+        w_trim = (w // block) * block
+        if h_trim == 0 or w_trim == 0:
+            return 0.5
+
+        grid = residual[:h_trim, :w_trim].reshape(h_trim // block, block, w_trim // block, block)
+        block_std = grid.std(axis=(1, 3))
+        spread = float(np.std(block_std))
+
+        return float(np.clip(1.0 - spread / 25.0, 0.0, 1.0))
     
     def _analyze_frequency_domain(self, image: Image.Image) -> float:
         """
         Analyze frequency domain - AI images have characteristic patterns
         """
-        img_array = np.array(image.convert('L'))  # Grayscale
+        img_array = np.array(image.convert('L'), dtype=np.float32)  # Grayscale
         
         # FFT analysis
         fft = np.fft.fft2(img_array)
         fft_shift = np.fft.fftshift(fft)
-        magnitude = np.abs(fft_shift)
+        magnitude = np.log1p(np.abs(fft_shift))
         
         # AI images often have regular patterns in frequency domain
+        cx, cy = magnitude.shape[0] // 2, magnitude.shape[1] // 2
+        window = max(min(magnitude.shape) // 20, 8)
+
         center_power = np.mean(magnitude[
-            magnitude.shape[0]//2-10:magnitude.shape[0]//2+10,
-            magnitude.shape[1]//2-10:magnitude.shape[1]//2+10
+            cx-window:cx+window,
+            cy-window:cy+window
         ])
         
+        edge = max(min(magnitude.shape) // 30, 6)
         edge_power = np.mean([
-            np.mean(magnitude[:10, :]),
-            np.mean(magnitude[-10:, :]),
-            np.mean(magnitude[:, :10]),
-            np.mean(magnitude[:, -10:])
+            np.mean(magnitude[:edge, :]),
+            np.mean(magnitude[-edge:, :]),
+            np.mean(magnitude[:, :edge]),
+            np.mean(magnitude[:, -edge:])
         ])
         
         # Calculate ratio
-        ratio = center_power / (edge_power + 1e-10)
+        ratio = center_power / (edge_power + 1e-6)
         
         # Normalize
-        frequency_score = min(ratio / 100.0, 1.0)
+        frequency_score = float(np.clip((ratio - 1.0) / 4.0, 0.0, 1.0))
         
         return frequency_score
+
+    def _analyze_texture_consistency(self, image: Image.Image) -> float:
+        """Analyze texture entropy consistency across regions."""
+        gray = np.array(image.convert('L'), dtype=np.uint8)
+        block = 32
+        h, w = gray.shape
+        h_trim = (h // block) * block
+        w_trim = (w // block) * block
+        if h_trim == 0 or w_trim == 0:
+            return 0.5
+
+        patches = gray[:h_trim, :w_trim].reshape(h_trim // block, block, w_trim // block, block)
+        entropies = []
+        for i in range(patches.shape[0]):
+            for j in range(patches.shape[2]):
+                patch = patches[i, :, j, :].ravel()
+                hist = np.bincount(patch, minlength=256).astype(np.float32)
+                hist /= (hist.sum() + 1e-6)
+                entropy = -np.sum(hist * np.log2(hist + 1e-6))
+                entropies.append(entropy)
+
+        entropy_std = float(np.std(entropies))
+        return float(np.clip(1.0 - entropy_std / 2.0, 0.0, 1.0))

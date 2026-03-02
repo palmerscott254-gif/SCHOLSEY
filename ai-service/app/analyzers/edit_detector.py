@@ -3,6 +3,7 @@ from PIL import Image
 import io
 import cv2
 from typing import Dict
+import os
 
 class EditDetector:
     """
@@ -15,6 +16,7 @@ class EditDetector:
     
     def __init__(self):
         self.model = None
+        self.analysis_size = int(os.getenv("EDIT_ANALYSIS_SIZE", "768"))
     
     async def load_model(self):
         """Initialize edit detection models"""
@@ -26,6 +28,8 @@ class EditDetector:
         """
         try:
             image = Image.open(io.BytesIO(image_data))
+            if max(image.size) > self.analysis_size:
+                image.thumbnail((self.analysis_size, self.analysis_size), Image.Resampling.LANCZOS)
             img_array = np.array(image)
             
             # Run various detection methods
@@ -65,7 +69,7 @@ class EditDetector:
         Edited areas will have different error levels
         """
         try:
-            original = Image.open(io.BytesIO(image_data))
+            original = Image.open(io.BytesIO(image_data)).convert('RGB')
             
             # Re-save at 95% quality
             temp_buffer = io.BytesIO()
@@ -74,18 +78,23 @@ class EditDetector:
             resaved = Image.open(temp_buffer)
             
             # Calculate difference
-            diff = np.array(original, dtype=float) - np.array(resaved, dtype=float)
+            diff = np.array(original, dtype=np.float32) - np.array(resaved, dtype=np.float32)
             ela_image = np.abs(diff).astype(np.uint8)
             
             # Calculate ELA score
             ela_score = np.mean(ela_image) / 255.0
             
             # High ELA score in specific regions suggests editing
-            max_regional_score = np.max([
-                np.mean(ela_image[i:i+50, j:j+50])
-                for i in range(0, ela_image.shape[0]-50, 50)
-                for j in range(0, ela_image.shape[1]-50, 50)
-            ]) / 255.0
+            region = 40
+            h, w = ela_image.shape[:2]
+            h_trim = (h // region) * region
+            w_trim = (w // region) * region
+            if h_trim > 0 and w_trim > 0:
+                ela_gray = cv2.cvtColor(ela_image, cv2.COLOR_RGB2GRAY)
+                tiles = ela_gray[:h_trim, :w_trim].reshape(h_trim // region, region, w_trim // region, region)
+                max_regional_score = float(tiles.mean(axis=(1, 3)).max()) / 255.0
+            else:
+                max_regional_score = ela_score
             
             return {
                 "found": ela_score > 0.15,
@@ -112,9 +121,9 @@ class EditDetector:
             else:
                 gray = img_array
             
-            # Detect keypoints
-            sift = cv2.SIFT_create()
-            keypoints, descriptors = sift.detectAndCompute(gray, None)
+            # Detect keypoints (ORB is faster and widely available)
+            orb = cv2.ORB_create(nfeatures=1200)
+            keypoints, descriptors = orb.detectAndCompute(gray, None)
             
             if descriptors is None or len(descriptors) < 10:
                 return {
@@ -124,7 +133,7 @@ class EditDetector:
                 }
             
             # Match features to find duplicates
-            bf = cv2.BFMatcher()
+            bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
             matches = bf.knnMatch(descriptors, descriptors, k=3)
             
             # Find self-matches (excluding exact same point)
@@ -132,13 +141,13 @@ class EditDetector:
             for match in matches:
                 if len(match) >= 2:
                     m, n = match[0], match[1]
-                    if m.distance < 0.7 * n.distance and m.trainIdx != m.queryIdx:
+                    if m.distance < 0.75 * n.distance and m.trainIdx != m.queryIdx:
                         clone_matches.append(m)
             
-            clone_score = min(len(clone_matches) / 100.0, 1.0)
+            clone_score = min(len(clone_matches) / 120.0, 1.0)
             
             return {
-                "found": len(clone_matches) > 20,
+                "found": len(clone_matches) > 25,
                 "score": round(clone_score, 4),
                 "regions": len(clone_matches),
                 "details": f"{len(clone_matches)} potential cloned regions detected"
@@ -160,19 +169,17 @@ class EditDetector:
             # Divide image into regions
             h, w = img_array.shape[:2]
             region_size = 64
+
+            if len(img_array.shape) == 3:
+                gray_all = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+            else:
+                gray_all = img_array
             
             lighting_vectors = []
             
             for i in range(0, h - region_size, region_size):
                 for j in range(0, w - region_size, region_size):
-                    region = img_array[i:i+region_size, j:j+region_size]
-                    
-                    # Calculate lighting direction (simplified)
-                    # In reality, use more sophisticated methods
-                    if len(region.shape) == 3:
-                        gray_region = cv2.cvtColor(region, cv2.COLOR_RGB2GRAY)
-                    else:
-                        gray_region = region
+                    gray_region = gray_all[i:i+region_size, j:j+region_size]
                     
                     # Gradient analysis
                     gx = cv2.Sobel(gray_region, cv2.CV_64F, 1, 0, ksize=3)
@@ -188,10 +195,10 @@ class EditDetector:
             std_x = np.std(lighting_vectors[:, 0])
             std_y = np.std(lighting_vectors[:, 1])
             
-            inconsistency_score = min((std_x + std_y) / 100.0, 1.0)
+            inconsistency_score = min((std_x + std_y) / 70.0, 1.0)
             
             return {
-                "found": inconsistency_score > 0.6,
+                "found": inconsistency_score > 0.55,
                 "score": round(inconsistency_score, 4),
                 "details": "Lighting direction variance detected across regions"
             }
@@ -209,26 +216,29 @@ class EditDetector:
         Different compression levels suggest editing
         """
         try:
-            img_array = np.array(image)
-            
-            # Analyze 8x8 DCT blocks (JPEG compression)
-            block_variances = []
-            
-            for i in range(0, img_array.shape[0] - 8, 8):
-                for j in range(0, img_array.shape[1] - 8, 8):
-                    block = img_array[i:i+8, j:j+8]
-                    if len(block.shape) == 3:
-                        block = cv2.cvtColor(block, cv2.COLOR_RGB2GRAY)
-                    
-                    variance = np.var(block)
-                    block_variances.append(variance)
-            
+            gray = np.array(image.convert('L'), dtype=np.float32)
+
+            # Analyze 8x8 block variance map in vectorized form
+            block = 8
+            h, w = gray.shape
+            h_trim = (h // block) * block
+            w_trim = (w // block) * block
+            if h_trim == 0 or w_trim == 0:
+                return {
+                    "found": False,
+                    "score": 0.0,
+                    "details": "Image too small for compression analysis"
+                }
+
+            blocks = gray[:h_trim, :w_trim].reshape(h_trim // block, block, w_trim // block, block)
+            block_variances = blocks.var(axis=(1, 3))
+
             # Inconsistent variances suggest recompression
-            variance_std = np.std(block_variances)
-            compression_score = min(variance_std / 1000.0, 1.0)
+            variance_std = float(np.std(block_variances))
+            compression_score = min(variance_std / 600.0, 1.0)
             
             return {
-                "found": compression_score > 0.65,
+                "found": compression_score > 0.6,
                 "score": round(compression_score, 4),
                 "details": "Inconsistent compression artifacts detected"
             }

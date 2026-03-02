@@ -8,6 +8,13 @@ from .analyzers.metadata_analyzer import MetadataAnalyzer
 from .models.analysis_result import AnalysisResult
 import time
 import os
+import asyncio
+import io
+from PIL import Image, UnidentifiedImageError
+
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", "15728640"))  # 15MB
+MAX_IMAGE_PIXELS = int(os.getenv("MAX_IMAGE_PIXELS", "48000000"))  # ~48MP
+Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 # Initialize analyzers
 ai_detector = None
@@ -79,7 +86,8 @@ async def analyze_image(file: UploadFile = File(...)):
         - Authenticity score
         - Detailed report
     """
-    if not file.content_type.startswith("image/"):
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
     start_time = time.time()
@@ -87,11 +95,29 @@ async def analyze_image(file: UploadFile = File(...)):
     try:
         # Read image data
         image_data = await file.read()
+
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        if len(image_data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Image exceeds maximum allowed size of {MAX_UPLOAD_BYTES // (1024 * 1024)}MB"
+            )
+
+        # Validate image decode early (prevents malformed payloads)
+        try:
+            with Image.open(io.BytesIO(image_data)) as image:
+                image.verify()
+        except (UnidentifiedImageError, OSError):
+            raise HTTPException(status_code=400, detail="Invalid or corrupted image file")
         
-        # Run all analyzers
-        ai_result = await ai_detector.analyze(image_data)
-        edit_result = await edit_detector.analyze(image_data)
-        metadata_result = await metadata_analyzer.analyze(image_data)
+        # Run analyzers concurrently for lower latency
+        ai_result, edit_result, metadata_result = await asyncio.gather(
+            ai_detector.analyze(image_data),
+            edit_detector.analyze(image_data),
+            metadata_analyzer.analyze(image_data),
+        )
         
         # Calculate overall authenticity score
         authenticity_score = calculate_authenticity_score(
@@ -123,9 +149,11 @@ async def analyze_image(file: UploadFile = File(...)):
                 "metadata": metadata_result,
             },
             processing_time_ms=processing_time,
-            model_version="1.2.0",
+            model_version="1.3.0",
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 

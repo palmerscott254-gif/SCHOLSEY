@@ -87,3 +87,4 @@ venv.bak/
 
 #.md files
 *.md exclude README.md
+*.md
