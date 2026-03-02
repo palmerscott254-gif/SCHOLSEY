@@ -1,11 +1,17 @@
 import numpy as np
 from PIL import Image, ImageFilter
 import io
-import torch
-import torch.nn as nn
-from torchvision import transforms
 from typing import Dict, Optional
 import os
+
+# Optional PyTorch imports
+try:
+    import torch
+    import torch.nn as nn
+    from torchvision import transforms
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 class AIDetector:
     """
@@ -15,19 +21,27 @@ class AIDetector:
     
     def __init__(self):
         self.model = None
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = None
         self.model_path = os.getenv("AI_DETECTOR_MODEL_PATH")
         self.model_weight = float(os.getenv("AI_MODEL_WEIGHT", "0.0"))
         self.model_available = False
         self.analysis_size = int(os.getenv("AI_ANALYSIS_SIZE", "512"))
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        self.transform = None
+        
+        if TORCH_AVAILABLE:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
     
     async def load_model(self):
         """Load pre-trained AI detection model"""
+        if not TORCH_AVAILABLE:
+            print("✅ AI Detector running in heuristic mode (PyTorch not available)")
+            return
+            
         if self.model_path and os.path.exists(self.model_path):
             try:
                 self.model = self._build_model()
@@ -47,6 +61,9 @@ class AIDetector:
     
     def _build_model(self):
         """Build simple CNN for AI detection"""
+        if not TORCH_AVAILABLE:
+            return None
+            
         # Simplified model - in production, use ResNet50 or EfficientNet
         model = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1),
@@ -81,7 +98,7 @@ class AIDetector:
                 image.thumbnail((self.analysis_size, self.analysis_size), Image.Resampling.LANCZOS)
 
             model_probability: Optional[float] = None
-            if self.model_available and self.model is not None:
+            if TORCH_AVAILABLE and self.model_available and self.model is not None:
                 input_tensor = self.transform(image).unsqueeze(0).to(self.device)
                 with torch.no_grad():
                     output = self.model(input_tensor)

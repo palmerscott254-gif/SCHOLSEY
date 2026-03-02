@@ -22,6 +22,23 @@ import { GatewayModule } from './gateway/gateway.module';
 // Controllers
 import { AppController } from './app.controller';
 
+const enableBull = process.env.ENABLE_BULL === 'true';
+const queueModules = enableBull
+  ? [
+      BullModule.forRootAsync({
+        useFactory: () => ({
+          redis: {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT) || 6379,
+            password: process.env.REDIS_PASSWORD,
+            enableOfflineQueue: false,
+            maxRetriesPerRequest: 1,
+          },
+        }),
+      }),
+    ]
+  : [];
+
 @Module({
   imports: [
     // Configuration
@@ -38,16 +55,8 @@ import { AppController } from './app.controller';
       },
     ]),
 
-    // Bull queue
-    BullModule.forRootAsync({
-      useFactory: () => ({
-        redis: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT) || 6379,
-          password: process.env.REDIS_PASSWORD,
-        },
-      }),
-    }),
+    // Bull queue (optional in local/dev)
+    ...queueModules,
 
     // Scheduler
     ScheduleModule.forRoot(),
