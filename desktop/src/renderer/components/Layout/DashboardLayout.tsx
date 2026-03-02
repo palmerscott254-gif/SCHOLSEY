@@ -77,22 +77,13 @@ const DashboardLayout: React.FC = () => {
               Device Tracker Dashboard
             </Typography>
 
-            {!isAuthenticated && (
-              <Chip 
-                label="Guest Mode" 
-                size="small" 
-                color="warning" 
-                sx={{ mr: 2 }}
-              />
-            )}
-
-            <IconButton color="inherit">
+            <IconButton color="inherit" title="Notifications">
               <Badge badgeContent={unreadCount} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>
 
-            <IconButton color="inherit" onClick={handleMenuOpen}>
+            <IconButton color="inherit" onClick={handleMenuOpen} title="User Menu">
               <AccountCircle />
             </IconButton>
 
@@ -109,51 +100,25 @@ const DashboardLayout: React.FC = () => {
                 horizontal: 'right',
               }}
             >
-              {isAuthenticated ? (
-                <>
-                  <MenuItem disabled>
-                    <ListItemText
-                      primary={user?.email || 'User'}
-                      secondary="Authenticated"
-                    />
-                  </MenuItem>
-                  <Divider />
-                  <MenuItem onClick={() => { handleMenuClose(); navigate('/settings'); }}>
-                    <ListItemIcon>
-                      <AccountCircle fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Account Settings</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={handleLogout}>
-                    <ListItemIcon>
-                      <LogoutIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Logout</ListItemText>
-                  </MenuItem>
-                </>
-              ) : (
-                <>
-                  <MenuItem disabled>
-                    <ListItemText
-                      primary="Not signed in"
-                      secondary="Login to access all features"
-                    />
-                  </MenuItem>
-                  <Divider />
-                  <MenuItem onClick={handleLogin}>
-                    <ListItemIcon>
-                      <LoginIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Sign In</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={handleLogin}>
-                    <ListItemIcon>
-                      <PersonAddIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Create Account</ListItemText>
-                  </MenuItem>
-                </>
-              )}
+              <MenuItem disabled>
+                <ListItemText
+                  primary={user?.email || 'User'}
+                  secondary="Logged in"
+                />
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={() => { handleMenuClose(); navigate('/settings'); }}>
+                <ListItemIcon>
+                  <AccountCircle fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Account Settings</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Logout</ListItemText>
+              </MenuItem>
             </Menu>
           </Toolbar>
         </AppBar>

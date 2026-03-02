@@ -15,6 +15,8 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Throttle } from '@nestjs/throttler';
+import { RegisterDto } from './dto/register.dto';
+import { Verify2FADto, ChangePasswordDto, RefreshTokenDto } from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -25,18 +27,10 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async register(
-    @Body()
-    body: {
-      email: string;
-      password: string;
-      firstName?: string;
-      lastName?: string;
-      phoneNumber?: string;
-    },
-  ) {
-    return this.authService.register(body);
+  @ApiResponse({ status: 400, description: 'Bad request - invalid input' })
+  @ApiResponse({ status: 409, description: 'Conflict - email already in use' })
+  async register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 
   @UseGuards(LocalAuthGuard)
@@ -45,7 +39,8 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid credentials' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts - account locked' })
   async login(
     @Request() req,
     @Ip() ipAddress: string,
@@ -59,13 +54,18 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Verify 2FA code and complete login' })
   @ApiResponse({ status: 200, description: '2FA verified successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid 2FA code' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid 2FA code' })
   async verify2FA(
-    @Body() body: { userId: string; code: string },
+    @Body() verify2FADto: Verify2FADto,
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ) {
-    return this.authService.verify2FA(body.userId, body.code, ipAddress, userAgent);
+    return this.authService.verify2FA(
+      verify2FADto.userId,
+      verify2FADto.code,
+      ipAddress,
+      userAgent,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -90,9 +90,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
-  async refresh(@Body() body: { refreshToken: string }) {
-    return this.authService.refreshToken(body.refreshToken);
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid refresh token' })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)

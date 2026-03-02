@@ -22,10 +22,14 @@ const App: React.FC = () => {
   return (
     <Box sx={{ height: '100vh', display: 'flex' }}>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Authentication Routes */}
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
         
-        {/* Allow access to dashboard regardless of authentication status */}
-        <Route path="/" element={<DashboardLayout />}>
+        {/* Protected Dashboard Routes */}
+        <Route 
+          path="/" 
+          element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
+        >
           <Route index element={<Dashboard />} />
           <Route path="map" element={<DeviceMap />} />
           <Route path="alerts" element={<Alerts />} />
@@ -33,6 +37,9 @@ const App: React.FC = () => {
           <Route path="ai-analysis" element={<AIAnalysis />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
       </Routes>
     </Box>
   );

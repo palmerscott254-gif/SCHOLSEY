@@ -3,11 +3,22 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
 
+// Environment configuration - update based on deployment
+const API_CONFIG = {
+  development: 'http://localhost:3000/v1',
+  staging: 'https://staging-api.devicetracker.com/v1',
+  production: 'https://api.devicetracker.com/v1',
+};
+
 class ApiService {
   private api: AxiosInstance;
-  private baseURL = 'https://api.devicetracker.com/v1'; // Change for production
+  private baseURL: string;
 
   constructor() {
+    // Use environment variable or default to production
+    const environment = process.env.NODE_ENV || 'production';
+    this.baseURL = API_CONFIG[environment as keyof typeof API_CONFIG] || API_CONFIG.production;
+
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 30000,

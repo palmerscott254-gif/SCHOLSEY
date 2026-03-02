@@ -84,3 +84,6 @@ env/
 ENV/
 env.bak/
 venv.bak/
+
+#.md files
+*.md exclude README.md

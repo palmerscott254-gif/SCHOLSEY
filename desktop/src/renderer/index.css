@@ -8,11 +8,13 @@ html,
 body {
   width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #0F172A;
+  color: #F1F5F9;
 }
 
 #root {
@@ -21,25 +23,45 @@ body {
 }
 
 body {
-  background-color: #1a1a1a;
-  color: #ffffff;
+  background-color: #0F172A;
+  color: #F1F5F9;
 }
 
-/* Scrollbar styling */
+/* Improved scrollbar styling with high contrast */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: #1E293B;
+  border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
+  background: #475569;
+  border-radius: 5px;
+  border: 2px solid #1E293B;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: #64748B;
 }
+
+/* Accessibility: High contrast focus states */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+}
+

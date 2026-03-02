@@ -9,10 +9,13 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DevicesService } from './devices.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PairDeviceDto, UpdateDeviceDto } from './dto/device.dto';
 
 @ApiTags('devices')
 @Controller('devices')
@@ -22,24 +25,15 @@ export class DevicesController {
   constructor(private devicesService: DevicesService) {}
 
   @Post('pair')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Pair a new device' })
-  async pairDevice(
-    @Request() req,
-    @Body() body: {
-      deviceName: string;
-      deviceType: 'android' | 'ios';
-      osVersion: string;
-      appVersion: string;
-      deviceModel: string;
-      deviceUuid: string;
-      publicKey: string;
-    },
-  ) {
-    return this.devicesService.pairDevice(req.user.userId, body);
+  async pairDevice(@Request() req, @Body() pairDeviceDto: PairDeviceDto) {
+    return this.devicesService.pairDevice(req.user.userId, pairDeviceDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all paired devices' })
+  @ApiQuery({ name: 'includeInactive', required: false, type: 'boolean' })
   async getDevices(
     @Request() req,
     @Query('includeInactive') includeInactive?: boolean,
@@ -58,17 +52,13 @@ export class DevicesController {
   async updateDevice(
     @Request() req,
     @Param('deviceId') deviceId: string,
-    @Body() body: {
-      deviceName?: string;
-      isTrackingEnabled?: boolean;
-      stealthMode?: boolean;
-      settings?: any;
-    },
+    @Body() updateDeviceDto: UpdateDeviceDto,
   ) {
-    return this.devicesService.updateDevice(deviceId, req.user.userId, body);
+    return this.devicesService.updateDevice(deviceId, req.user.userId, updateDeviceDto);
   }
 
   @Delete(':deviceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Unpair device' })
   async deleteDevice(@Request() req, @Param('deviceId') deviceId: string) {
     return this.devicesService.deleteDevice(deviceId, req.user.userId);

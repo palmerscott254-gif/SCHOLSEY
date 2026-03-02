@@ -7,10 +7,13 @@ import {
   Body,
   UseGuards,
   Request,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -27,34 +30,23 @@ export class UsersController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Update user profile' })
-  async updateProfile(
-    @Request() req,
-    @Body() body: {
-      firstName?: string;
-      lastName?: string;
-      phoneNumber?: string;
-    },
-  ) {
-    return this.usersService.update(req.user.userId, body);
+  async updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(req.user.userId, updateUserDto);
   }
 
   @Post('change-password')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Change user password' })
-  async changePassword(
-    @Request() req,
-    @Body() body: {
-      currentPassword: string;
-      newPassword: string;
-    },
-  ) {
+  async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
     return this.usersService.changePassword(
       req.user.userId,
-      body.currentPassword,
-      body.newPassword,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
     );
   }
 
   @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete user account' })
   async deleteAccount(@Request() req) {
     return this.usersService.deleteAccount(req.user.userId);
