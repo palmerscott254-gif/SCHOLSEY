@@ -88,6 +88,13 @@ class ApiService {
     return response.data;
   }
 
+  async verifyPairingCode(deviceId: string, pairingCode: string) {
+    const response = await this.api.post(`/devices/pair/${deviceId}/verify`, {
+      pairingCode: pairingCode.toUpperCase(),
+    });
+    return response.data;
+  }
+
   async getDevices() {
     const response = await this.api.get('/devices');
     return response.data;

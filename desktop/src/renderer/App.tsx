@@ -11,6 +11,7 @@ import DashboardLayout from './components/Layout/DashboardLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import DeviceMap from './pages/DeviceMap';
+import Devices from './pages/Devices';
 import Alerts from './pages/Alerts';
 import Timeline from './pages/Timeline';
 import Settings from './pages/Settings';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
           element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
         >
           <Route index element={<Dashboard />} />
+          <Route path="devices" element={<Devices />} />
           <Route path="map" element={<DeviceMap />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="timeline" element={<Timeline />} />

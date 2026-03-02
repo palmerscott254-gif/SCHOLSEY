@@ -5,6 +5,8 @@ import {
   IsBoolean,
   IsObject,
   MaxLength,
+  MinLength,
+  Matches,
 } from 'class-validator';
 
 export enum DeviceType {
@@ -33,10 +35,23 @@ export class PairDeviceDto {
   deviceModel: string;
 
   @IsString()
+  @MinLength(20)
+  @MaxLength(255)
   deviceUuid: string;
 
   @IsString()
+  @MinLength(100)
   publicKey: string;
+}
+
+export class VerifyPairingCodeDto {
+  @IsString()
+  @MinLength(6)
+  @MaxLength(6)
+  @Matches(/^[A-Z0-9]+$/, {
+    message: 'Pairing code must contain only uppercase letters and numbers',
+  })
+  pairingCode: string;
 }
 
 export class UpdateDeviceDto {

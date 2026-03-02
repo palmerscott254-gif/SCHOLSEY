@@ -90,6 +90,39 @@ export const api = {
 
       return response.json();
     },
+
+    initiatePairing: async (deviceData: any, token: string) => {
+      const response = await fetch(`${API_BASE_URL}/devices/pair`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(deviceData),
+      });
+
+      if (!response.ok) {
+        const error: any = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to initiate device pairing');
+      }
+
+      return response.json();
+    },
+
+    unpairDevice: async (deviceId: string, token: string) => {
+      const response = await fetch(`${API_BASE_URL}/devices/${deviceId}/unpair`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to unpair device');
+      }
+
+      return response.json();
+    },
   },
 
   alerts: {
@@ -199,6 +232,73 @@ export const api = {
       }
 
       return response.json();
+    },
+  },
+
+  users: {
+    getProfile: async (token: string) => {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      return response.json();
+    },
+
+    updateProfile: async (data: any, token: string) => {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error: any = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to update profile');
+      }
+
+      return response.json();
+    },
+
+    changePassword: async (currentPassword: string, newPassword: string, token: string) => {
+      const response = await fetch(`${API_BASE_URL}/users/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!response.ok) {
+        const error: any = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to change password');
+      }
+
+      return response.json();
+    },
+
+    deleteAccount: async (token: string) => {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete account');
+      }
+
+      return response.status === 204 || response.json();
     },
   },
 };

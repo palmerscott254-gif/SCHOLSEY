@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
+  PhoneAndroid as DevicesIcon,
   Map as MapIcon,
   Notifications as AlertsIcon,
   Timeline as TimelineIcon,
@@ -31,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Devices', icon: <DevicesIcon />, path: '/devices' },
     { text: 'Device Map', icon: <MapIcon />, path: '/map' },
     { text: 'Alerts', icon: <AlertsIcon />, path: '/alerts' },
     { text: 'Timeline', icon: <TimelineIcon />, path: '/timeline' },
