@@ -82,7 +82,7 @@ class EditDetector:
             ela_image = np.abs(diff).astype(np.uint8)
             
             # Calculate ELA score
-            ela_score = np.mean(ela_image) / 255.0
+            ela_score = float(np.mean(ela_image) / 255.0)
             
             # High ELA score in specific regions suggests editing
             region = 40
@@ -97,9 +97,9 @@ class EditDetector:
                 max_regional_score = ela_score
             
             return {
-                "found": ela_score > 0.15,
-                "score": round(ela_score, 4),
-                "max_regional_score": round(max_regional_score, 4),
+                "found": bool(ela_score > 0.15),
+                "score": round(float(ela_score), 4),
+                "max_regional_score": round(float(max_regional_score), 4),
                 "details": "Areas with different error levels detected"
             }
             
@@ -144,11 +144,11 @@ class EditDetector:
                     if m.distance < 0.75 * n.distance and m.trainIdx != m.queryIdx:
                         clone_matches.append(m)
             
-            clone_score = min(len(clone_matches) / 120.0, 1.0)
+            clone_score = float(min(len(clone_matches) / 120.0, 1.0))
             
             return {
-                "found": len(clone_matches) > 25,
-                "score": round(clone_score, 4),
+                "found": bool(len(clone_matches) > 25),
+                "score": round(float(clone_score), 4),
                 "regions": len(clone_matches),
                 "details": f"{len(clone_matches)} potential cloned regions detected"
             }
@@ -192,14 +192,14 @@ class EditDetector:
             
             # Calculate consistency
             lighting_vectors = np.array(lighting_vectors)
-            std_x = np.std(lighting_vectors[:, 0])
-            std_y = np.std(lighting_vectors[:, 1])
+            std_x = float(np.std(lighting_vectors[:, 0]))
+            std_y = float(np.std(lighting_vectors[:, 1]))
             
-            inconsistency_score = min((std_x + std_y) / 70.0, 1.0)
+            inconsistency_score = float(min((std_x + std_y) / 70.0, 1.0))
             
             return {
-                "found": inconsistency_score > 0.55,
-                "score": round(inconsistency_score, 4),
+                "found": bool(inconsistency_score > 0.55),
+                "score": round(float(inconsistency_score), 4),
                 "details": "Lighting direction variance detected across regions"
             }
             
@@ -235,11 +235,11 @@ class EditDetector:
 
             # Inconsistent variances suggest recompression
             variance_std = float(np.std(block_variances))
-            compression_score = min(variance_std / 600.0, 1.0)
+            compression_score = float(min(variance_std / 600.0, 1.0))
             
             return {
-                "found": compression_score > 0.6,
-                "score": round(compression_score, 4),
+                "found": bool(compression_score > 0.6),
+                "score": round(float(compression_score), 4),
                 "details": "Inconsistent compression artifacts detected"
             }
             

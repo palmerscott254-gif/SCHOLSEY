@@ -110,7 +110,7 @@ class AIDetector:
             texture_score = self._analyze_texture_consistency(image)
             
             # Combine scores
-            heuristic_probability = (
+            heuristic_probability = float(
                 noise_score * 0.35 +
                 frequency_score * 0.35 +
                 texture_score * 0.30
@@ -120,17 +120,17 @@ class AIDetector:
                 combined_probability = heuristic_probability
             else:
                 model_weight = min(max(self.model_weight, 0.0), 1.0)
-                combined_probability = (
+                combined_probability = float(
                     model_probability * model_weight + heuristic_probability * (1.0 - model_weight)
                 )
             
             return {
-                "is_ai_generated": combined_probability > 0.6,
-                "probability": round(combined_probability, 4),
-                "model_confidence": round(model_probability, 4) if model_probability is not None else None,
-                "noise_score": round(noise_score, 4),
-                "frequency_score": round(frequency_score, 4),
-                "texture_score": round(texture_score, 4),
+                "is_ai_generated": bool(combined_probability > 0.6),
+                "probability": round(float(combined_probability), 4),
+                "model_confidence": round(float(model_probability), 4) if model_probability is not None else None,
+                "noise_score": round(float(noise_score), 4),
+                "frequency_score": round(float(frequency_score), 4),
+                "texture_score": round(float(texture_score), 4),
                 "details": {
                     "method": "heuristics_with_optional_model_fusion",
                     "model": "custom_ai_detector_v1" if self.model_available else "heuristic_only",

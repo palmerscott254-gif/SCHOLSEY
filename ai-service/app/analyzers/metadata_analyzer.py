@@ -55,8 +55,8 @@ class MetadataAnalyzer:
                 anomaly_score += 0.2
             
             return {
-                "found": len(issues) > 0,
-                "anomaly_score": min(anomaly_score, 1.0),
+                "found": bool(len(issues) > 0),
+                "anomaly_score": float(min(anomaly_score, 1.0)),
                 "issues": issues,
                 "exif_data": self._format_exif_data(exif_data),
                 "details": {

@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Dict, List, Optional
 
 class AnalysisResult(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     is_ai_generated: bool
     ai_probability: float
     is_edited: bool
