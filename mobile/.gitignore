@@ -1,31 +1,65 @@
+# Dependencies
+node_modules/
+
 # Expo
 .expo/
 .expo-shared/
 dist/
 web-build/
 
-# Dependencies
-node_modules/
+# Android
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/debug.keystore
+android/app/release.keystore
+android/app/release/
+android/gradle/wrapper/*.zip
+android/gradle/wrapper/gradle-*/
+*.jks
+*.keystore
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcodeproj
+!ios/*.xcodeproj/project.pbxproj
+!ios/*.xcodeproj/xcshareddata/
+!ios/*.xcworkspace/contents.xcworkspacedata
+*.pbxuser
+!default.pbxuser
+*.ipa
 
 # Environment
 .env
 .env.local
+.env.production
 
 # React Native
-*.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.orig.*
 
-# Metro
-.metro-health-check*
-
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
+
+# Metro
+.metro-health-check*
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+
+# Signing
+android/.env.signing
+android/app/*.keystore
 
 # IDE
 .vscode/
@@ -38,16 +72,3 @@ Thumbs.db
 
 # Testing
 coverage/
-
-# Android
-android/app/build/
-android/.gradle/
-android/app/release/
-
-# iOS
-ios/Pods/
-ios/build/
-*.pbxuser
-!default.pbxuser
-*.xcworkspace
-!default.xcworkspace

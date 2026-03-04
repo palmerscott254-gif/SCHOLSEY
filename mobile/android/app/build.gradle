@@ -1,30 +1,16 @@
 apply plugin: "com.android.application"
-apply plugin: "com.facebook.react"
-apply plugin: "kotlin-android"
-
-import com.android.build.OutputFile
-
-project.ext.react = [
-    enableHermes: true,
-    codegenEnabled: true,
-]
-
-apply from: "../../node_modules/react-native/react.gradle"
-apply from: "../../node_modules/react-native-code-push/android/codepush.gradle"
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-    compileSdkVersion rootProject.ext.compileSdkVersion
-
     namespace "com.devicetracker"
+    compileSdkVersion 33
+    ndkVersion "26.1.10909125"
 
     defaultConfig {
         applicationId "com.devicetracker"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 24
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0.0"
-        buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", "true"
     }
 
     signingConfigs {
@@ -48,7 +34,7 @@ android {
         }
         release {
             signingConfig signingConfigs.release
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
@@ -61,16 +47,17 @@ android {
         pickFirst 'lib/x86/libjsc.so'
         pickFirst 'lib/x86/libc++_shared.so'
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
 }
 
 dependencies {
-    // React Native
-    implementation project(':react-native-geolocation-service')
-    implementation project(':react-native-maps')
-    implementation project(':react-native-background-geolocation')
-    implementation project(':react-native-biometrics')
-    
-    // Google Play Services
-    implementation 'com.google.android.gms:play-services-maps:18.2.0'
-    implementation 'com.google.android.gms:play-services-location:21.1.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.google.android.material:material:1.9.0'
 }
+
+
