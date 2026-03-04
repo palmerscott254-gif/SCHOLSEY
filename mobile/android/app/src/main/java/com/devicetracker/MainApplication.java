@@ -1,12 +1,15 @@
 package com.devicetracker;
 
 import android.app.Application;
-import com.facebook.react.*;
-import com.facebook.react.bridge.JSIModulePackage;
+import com.facebook.react.PackageList;
+import com.facebook.react.ReactApplication;
+import com.facebook.react.ReactHost;
+import com.facebook.react.ReactNativeHost;
+import com.facebook.react.ReactPackage;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
+import com.facebook.react.defaults.DefaultReactHost;
 import com.facebook.react.defaults.DefaultReactNativeHost;
 import com.facebook.soloader.SoLoader;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 public class MainApplication extends Application implements ReactApplication {
@@ -29,8 +32,13 @@ public class MainApplication extends Application implements ReactApplication {
         }
 
         @Override
-        protected JSIModulePackage getJSIModulePackage() {
-          return DefaultNewArchitectureEntryPoint.getJSIModulePackage();
+        protected boolean isNewArchEnabled() {
+          return BuildConfig.IS_NEW_ARCHITECTURE_ENABLED;
+        }
+
+        @Override
+        protected Boolean isHermesEnabled() {
+          return BuildConfig.IS_HERMES_ENABLED;
         }
       };
 
@@ -40,29 +48,16 @@ public class MainApplication extends Application implements ReactApplication {
   }
 
   @Override
+  public ReactHost getReactHost() {
+    return DefaultReactHost.getDefaultReactHost(getApplicationContext(), getReactNativeHost());
+  }
+
+  @Override
   public void onCreate() {
     super.onCreate();
     SoLoader.init(this, /* native exopackage */ false);
-    initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
-  }
-
-  private static void initializeFlipper(
-      Context context, ReactInstanceManager reactInstanceManager) {
-    if (BuildConfig.DEBUG) {
-      try {
-        Class<?> aclass = Class.forName("com.facebook.flipper.android.AndroidFlipperClient");
-        aclass
-            .getMethod("getInstance", Context.class)
-            .invoke(null, context);
-        Class<?> GlideInterceptorClass =
-            Class.forName("com.facebook.flipper.android.utils.FlipperUtils");
-        GlideInterceptorClass.getMethod("configureCrash", ReactInstanceManager.class)
-            .invoke(null, reactInstanceManager);
-      } catch (ClassNotFoundException e) {
-      } catch (NoSuchMethodException e) {
-      } catch (IllegalAccessException e) {
-      } catch (InvocationTargetException e) {
-      }
+    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
+      DefaultNewArchitectureEntryPoint.load();
     }
   }
 }
