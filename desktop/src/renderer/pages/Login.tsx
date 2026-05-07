@@ -113,6 +113,21 @@ const Login: React.FC = () => {
     setConfirmPassword('');
   };
 
+  const handleContinueAsGuest = () => {
+    dispatch(
+      setAuth({
+        user: {
+          id: 'guest',
+          email: 'guest@local',
+          firstName: 'Guest',
+          lastName: 'User',
+        },
+        token: 'guest-token',
+      })
+    );
+    navigate('/');
+  };
+
   return (
     <Box
       sx={{
@@ -260,7 +275,7 @@ const Login: React.FC = () => {
             <Link
               component="button"
               variant="body2"
-              onClick={() => navigate('/')}
+              onClick={handleContinueAsGuest}
               sx={{ cursor: 'pointer' }}
             >
               Continue as Guest

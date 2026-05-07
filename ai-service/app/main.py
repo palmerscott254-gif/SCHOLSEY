@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
+from dotenv import load_dotenv
 from .analyzers.ai_detector import AIDetector
 from .analyzers.edit_detector import EditDetector
 from .analyzers.metadata_analyzer import MetadataAnalyzer
@@ -11,6 +12,12 @@ import os
 import asyncio
 import io
 from PIL import Image, UnidentifiedImageError
+
+CURRENT_DIR = os.path.dirname(__file__)
+SERVICE_ROOT = os.path.dirname(CURRENT_DIR)
+
+load_dotenv(os.path.join(SERVICE_ROOT, '.env'))
+load_dotenv(os.path.join(CURRENT_DIR, '.env'))
 
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", "15728640"))  # 15MB
 MAX_IMAGE_PIXELS = int(os.getenv("MAX_IMAGE_PIXELS", "48000000"))  # ~48MP
